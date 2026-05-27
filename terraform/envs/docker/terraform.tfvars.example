@@ -1,0 +1,22 @@
+# =============================================================================
+# Exemple de variables pour l'env Docker.
+# Copier vers `terraform.tfvars` (gitignored) et adapter les valeurs.
+# =============================================================================
+
+# Région / AZ AWS (Paris) ------------------------------------------------------
+aws_region        = "eu-west-3"
+availability_zone = "eu-west-3a"
+
+# Profil AWS local (configuré via `aws configure --profile tp-cont`) -----------
+aws_profile = "tp-cont"
+
+# Type d'instance --------------------------------------------------------------
+instance_type = "t3.small"
+
+# IP autorisée à se connecter en SSH (TON IP publique) -------------------------
+# Pour récupérer ton IP : curl https://api.ipify.org
+# Mettre en /32 pour ne pas exposer SSH au monde entier.
+admin_ip_cidr = "203.0.113.42/32"
+
+# Préfixe de nommage (optionnel) -----------------------------------------------
+# name_prefix = "tp-cont-docker"
