@@ -71,20 +71,26 @@
 
 > Objectif : `terraform apply` provisionne 1 EC2 + EIP + SG, prête à recevoir Docker.
 
-- ⬜ Compte AWS : créer utilisateur IAM dédié, configurer credentials locales
-- ⬜ Configurer alerte budget AWS (20 € warn, 50 € cap)
-- ⬜ `terraform/modules/network/` : VPC, subnet public, IGW, route table
-- ⬜ `terraform/modules/docker-host/` : 1 EC2 t3.small, EIP, SG (80/443/22), key pair
-- ⬜ `user_data` cloud-init : install Docker + docker compose plugin
-- ⬜ `terraform/envs/docker/main.tf` : appel des modules
-- ⬜ Variables : `terraform.tfvars.example`
-- ⬜ Test idempotence : `terraform destroy && terraform apply`
+- 🟦 Compte AWS : créer utilisateur IAM dédié `terraform-tp-cont`, configurer profil local `tp-cont` *(action utilisateur)*
+- ⬜ Configurer alerte budget AWS (20 € warn) *(action utilisateur)*
+- ✅ `terraform/modules/network/` : VPC, subnet public, IGW, route table
+- ✅ `terraform/modules/docker-host/` : 1 EC2 t3.small (Ubuntu 24.04), EIP, SG (80/443/22), key pair, IMDSv2, EBS chiffré
+- ✅ Cloud-init (`cloud-init.yaml.tftpl`) : install Docker Engine + Compose plugin v2 depuis le dépôt officiel Docker
+- ✅ `terraform/envs/docker/` : compose des modules + génération auto de la clé SSH
+- ✅ Variables : `terraform.tfvars.example` documenté
+- ✅ `terraform fmt` + `terraform validate` : OK
+- ⬜ Première exécution : `terraform init` + `plan` + `apply` (nécessite credentials AWS configurées)
 - ⬜ SSH manuel pour vérifier `docker version` OK
+- ⬜ Test idempotence : second `terraform apply` (no-op) puis `destroy` + `apply` from scratch
 
-**Commits prévus :**
-- `feat(terraform): module network (VPC, subnet, SG)`
-- `feat(terraform): module docker-host (EC2 + EIP + cloud-init Docker)`
-- `feat(terraform): env docker complet et idempotent`
+**Commits faits :**
+- ✅ `feat(terraform): module network (VPC, subnet public, IGW)`
+- ✅ `feat(terraform): module docker-host (EC2 Ubuntu + Docker via cloud-init)`
+- ✅ `feat(terraform): env docker (orchestration des modules + génération SSH)`
+- ✅ `docs(terraform): README et procédure AWS`
+
+**Commits restants prévus :**
+- `chore(terraform): premier apply de l'env docker (post AWS setup)`
 
 ---
 
@@ -241,8 +247,8 @@
 | Jalon | Points associés | Statut |
 |---|---|---|
 | J0 — Init | — | ✅ Terminé |
-| J1 — Conteneurisation | 3 | 🟦 En cours |
-| J2 — Infra Docker | 7 | ⬜ |
+| J1 — Conteneurisation | 3 | ✅ Terminé (push Docker Hub différé en J7) |
+| J2 — Infra Docker | 7 | 🟦 En cours (code prêt, apply à faire) |
 | J3 — Deploy Docker | 6 | ⬜ |
 | J4 — Infra K8s | 13 | ⬜ |
 | J5 — Deploy K8s | 7 | ⬜ |

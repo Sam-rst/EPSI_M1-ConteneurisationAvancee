@@ -29,6 +29,8 @@ Le tout est provisionné par **Terraform**, déployé par **GitHub Actions**, et
 
 ## Statut
 
-🟦 **Jalon en cours : J1 — Conteneurisation de l'application**
+🟦 **Jalon en cours : J2 — Infrastructure Docker (Terraform)**
+
+J1 (conteneurisation) ✅ validé en local — l'application répond et le jeu d'essai est chargé.
 
 Voir [`ROADMAP.md`](./ROADMAP.md) pour le détail.
