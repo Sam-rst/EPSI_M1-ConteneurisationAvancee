@@ -48,8 +48,9 @@
 - ✅ Refactor `connect.php` pour utiliser des variables d'environnement (DB_DRIVER/HOST/PORT/NAME/USER/PASSWORD)
 - ✅ Écrire `app/Dockerfile` (PHP 8.2 + Apache, PDO MySQL + PostgreSQL, healthcheck)
 - ✅ Écrire `app/.dockerignore`
-- ✅ Écrire `app/compose.dev.yml` (app + MariaDB) pour tester en local
-- ⬜ Test local : `docker compose -f app/compose.dev.yml up --build` et navigation sur `http://localhost:8080` (admin / password)
+- ✅ Écrire `app/compose.yml` (app + MySQL 8.4) pour valider l'image en local
+- ✅ Fix du dump SQL upstream (ligne parasite `Enter password:` retirée)
+- ✅ Test local validé : `docker compose up --build` → login `admin`/`password` → 5 produits du jeu d'essai affichés (HTTP 200, photos OK)
 - ⬜ Créer le repo Docker Hub `samrst/gestion-produits`
 - ⬜ Premier build/push manuel pour valider la chaîne (`docker build` + `docker push samrst/gestion-produits:prod`)
 
@@ -57,11 +58,12 @@
 - ✅ `feat(app): import du code de gestion-produits depuis upstream Avalone`
 - ✅ `refactor(app): connexion DB paramétrable par variables d'environnement`
 - ✅ `feat(app): ajout du Dockerfile PHP+Apache avec PDO MySQL et PostgreSQL`
-- 🟦 `feat(app): ajout du compose local de développement (app + mariadb)` *(en cours)*
+- ✅ `feat(app): ajout du compose local de développement (app + mariadb)` *(remplacé ensuite)*
+- 🟦 `fix(app): compose en MySQL 8.4 et correction du dump SQL upstream` *(en cours)*
 
 **Commits restants prévus :**
 - `docs(app): documentation de la conteneurisation`
-- `feat(ci): push initial manuel sur Docker Hub` (ou bien intégré directement en J7)
+- `feat(ci): push initial manuel sur Docker Hub` (ou intégré directement en J7)
 
 ---
 

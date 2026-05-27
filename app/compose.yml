@@ -1,17 +1,22 @@
 # =============================================================================
-# Stack de développement local — branche `main` (MySQL/MariaDB).
+# Stack locale de validation de l'image gestion-produits (MySQL).
 # =============================================================================
+# Ce compose sert UNIQUEMENT à valider l'image PHP+Apache sur la machine de
+# développement. La stack de production (Traefik + version dev PostgreSQL)
+# est définie séparément sous docker/compose.yml et déployée sur l'EC2 AWS.
+#
 # Usage :
 #   cd app/
-#   docker compose -f compose.dev.yml up --build
-#   → http://localhost:8080  (admin / password)
+#   docker compose up --build
+#   → http://localhost:8080  (login : admin / password)
 #
 # Volumes :
-#   - mysql-data : persistance MariaDB
+#   - mysql-data : persistance MySQL entre redémarrages
 #   - uploads    : persistance des photos produit
 #
-# Le dump SQL initial est monté en lecture seule dans /docker-entrypoint-initdb.d
-# et exécuté automatiquement au premier démarrage du conteneur MariaDB.
+# Le dump SQL fourni par Avalone est monté en lecture seule dans
+# /docker-entrypoint-initdb.d et exécuté automatiquement au premier
+# démarrage du conteneur MySQL.
 # =============================================================================
 
 services:
@@ -20,8 +25,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: samrst/gestion-produits:dev-local
-    container_name: gestion-produits-app-dev
+    image: samrst/gestion-produits:local
+    container_name: gestion-produits-app
     environment:
       DB_DRIVER: mysql
       DB_HOST: db
@@ -39,16 +44,16 @@ services:
     restart: unless-stopped
 
   db:
-    image: mariadb:11
-    container_name: gestion-produits-db-dev
+    image: mysql:8.4
+    container_name: gestion-produits-db
     environment:
-      MARIADB_ROOT_PASSWORD: root
-      MARIADB_DATABASE: gestion_produits
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: gestion_produits
     volumes:
       - mysql-data:/var/lib/mysql
       - ./database/gestion_produits.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
       interval: 10s
       timeout: 5s
       retries: 10
