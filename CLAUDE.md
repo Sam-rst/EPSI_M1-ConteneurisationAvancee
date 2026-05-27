@@ -36,9 +36,10 @@
 | Stockage K8s partagé | **AWS EFS** + CSI driver | Service managé, NFS, Free Tier 5 Go |
 | DNS / accès URL | **Fichier `/etc/hosts` + 2 Elastic IPs** | Conforme sujet (pas d'achat de domaine) |
 | TLS | **Certificats auto-signés** | Sujet précise que c'est acceptable |
-| App registry | **Docker Hub** (`samuressiot/gestion-produits`) | Choix utilisateur |
-| CI/CD | **GitHub Actions** | Repo de l'app est sur GitHub |
-| Version "dev" PostgreSQL | **Fork + branche `dev`** patchée | Choix structurel le plus propre |
+| App registry | **Docker Hub** (`samrst/gestion-produits`) | Choix utilisateur |
+| CI/CD | **GitHub Actions** | Repo unique sur GitHub |
+| Organisation des repos | **Mono-repo** (infra + app dans `infra-tp-cont`) | Plus simple, un seul workflow CI à gérer |
+| Version "dev" PostgreSQL | **Branche `dev` du mono-repo** | Patch du code app + image taguée `dev` |
 | CNI K8s | **Calico** | Standard, documenté |
 | Automation locale | **Makefile** (interface utilisateur unique) | Simple, lisible |
 
@@ -75,9 +76,10 @@
 
 | Repo | URL | Rôle |
 |---|---|---|
-| `infra-tp-cont` | (ce dépôt, à créer sur GitHub) | Terraform, manifests K8s, compose, doc, Makefile |
-| `gestion-produits` (upstream) | <https://gl.avalone-fr.com/anthony/gestion-produits> | Code original Avalone |
-| `gestion-produits` (fork) | (à créer sur GitHub Samuel) | Fork avec Dockerfile, branche `dev` PostgreSQL, GitHub Actions |
+| `infra-tp-cont` | (ce dépôt, sur GitHub Samuel) | **Mono-repo** : Terraform, manifests K8s, compose, code app, Dockerfile, CI/CD, doc, Makefile |
+| `gestion-produits` (upstream) | <https://gl.avalone-fr.com/anthony/gestion-produits> | Source originale Avalone (référence, pas de remote git configuré) |
+
+**Note** : le code de l'app est intégré dans `app/`, sans le `.git` du repo upstream. La traçabilité de l'origine est documentée dans `app/UPSTREAM.md`. La branche `dev` du mono-repo contient le code patché PostgreSQL.
 
 ---
 
@@ -111,17 +113,22 @@ infra-tp-cont/
 ├── docker/
 │   ├── docker-compose.yml
 │   └── traefik/
-└── k8s/
-    ├── base/
-    │   ├── app/
-    │   └── db/
-    ├── overlays/
-    │   ├── prod/
-    │   └── dev/
-    └── system/
-        ├── calico.yaml
-        ├── efs-csi.yaml
-        └── traefik.yaml
+├── k8s/
+│   ├── base/
+│   │   ├── app/
+│   │   └── db/
+│   ├── overlays/
+│   │   ├── prod/
+│   │   └── dev/
+│   └── system/
+│       ├── calico.yaml
+│       ├── efs-csi.yaml
+│       └── traefik.yaml
+└── app/                   # ⬅ code de l'application (import upstream Avalone)
+    ├── UPSTREAM.md        # source originale + commit de référence
+    ├── Dockerfile
+    ├── compose.dev.yml    # docker compose local de développement
+    └── …                  # PHP, SQL, assets
 ```
 
 ---

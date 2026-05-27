@@ -40,21 +40,23 @@
 
 ## J1 — Conteneurisation de l'application *(3 pts)*
 
-> Objectif : application Avalone tourne en local via Docker, image publiée sur Docker Hub.
+> Objectif : application Avalone tourne en local via Docker depuis le mono-repo, image publiée sur Docker Hub `samrst/gestion-produits`.
 
-- ⬜ Cloner `gestion-produits` depuis GitLab Avalone
-- ⬜ Créer le fork sur GitHub (origin = mon GitHub, upstream = GitLab Avalone)
-- ⬜ Écrire `Dockerfile` multi-stage (PHP-FPM + Apache OU PHP + serveur intégré)
-- ⬜ Écrire `docker-compose.yml` local (app + MariaDB) pour tester
+- ⬜ Cloner `gestion-produits` depuis GitLab Avalone dans un dossier temporaire
+- ⬜ Importer le contenu dans `app/` (sans le `.git` upstream)
+- ⬜ Écrire `app/UPSTREAM.md` (source + commit hash de référence)
+- ⬜ Écrire `app/Dockerfile` multi-stage (PHP-FPM + Apache OU PHP + serveur intégré)
+- ⬜ Écrire `app/compose.dev.yml` (app + MariaDB) pour tester en local
 - ⬜ Charger le jeu d'essai (DB + images)
-- ⬜ Vérifier l'app accessible en local sur `http://localhost`
-- ⬜ Créer le compte / repo Docker Hub `samuressiot/gestion-produits`
-- ⬜ Premier build/push manuel pour valider
+- ⬜ Vérifier l'app accessible sur `http://localhost`
+- ⬜ Créer le repo Docker Hub `samrst/gestion-produits`
+- ⬜ Premier build/push manuel pour valider la chaîne
 
 **Commits prévus :**
-- `feat(app): ajout du Dockerfile pour l'application` (sur le repo de l'app)
-- `feat(app): ajout du docker-compose local de dev` (sur le repo de l'app)
-- `docs: documentation de la conteneurisation` (sur infra-tp-cont)
+- `feat(app): import du code de gestion-produits depuis upstream Avalone`
+- `feat(app): ajout du Dockerfile multi-stage`
+- `feat(app): ajout du compose local de développement`
+- `docs(app): documentation de la conteneurisation`
 
 ---
 
@@ -231,8 +233,8 @@
 
 | Jalon | Points associés | Statut |
 |---|---|---|
-| J0 — Init | — | 🟦 En cours |
-| J1 — Conteneurisation | 3 | ⬜ |
+| J0 — Init | — | ✅ Terminé |
+| J1 — Conteneurisation | 3 | 🟦 En cours |
 | J2 — Infra Docker | 7 | ⬜ |
 | J3 — Deploy Docker | 6 | ⬜ |
 | J4 — Infra K8s | 13 | ⬜ |

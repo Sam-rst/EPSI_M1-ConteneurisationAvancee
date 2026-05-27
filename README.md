@@ -29,6 +29,6 @@ Le tout est provisionné par **Terraform**, déployé par **GitHub Actions**, et
 
 ## Statut
 
-🟦 **Jalon en cours : J0 — Initialisation du projet**
+🟦 **Jalon en cours : J1 — Conteneurisation de l'application**
 
 Voir [`ROADMAP.md`](./ROADMAP.md) pour le détail.
