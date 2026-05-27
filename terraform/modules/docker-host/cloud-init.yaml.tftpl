@@ -1,0 +1,54 @@
+#cloud-config
+# =============================================================================
+# Cloud-init pour l'EC2 hôte Docker.
+# =============================================================================
+# - Installe Docker Engine + plugin Compose v2 depuis les dépôts officiels Docker.
+# - Ajoute l'utilisateur ubuntu au groupe docker (pas besoin de sudo).
+# - Active et démarre le service docker.
+# =============================================================================
+
+package_update: true
+package_upgrade: false
+
+# Pré-requis pour ajouter le dépôt Docker
+packages:
+  - ca-certificates
+  - curl
+  - gnupg
+  - lsb-release
+
+runcmd:
+  # Ajout de la clé GPG officielle Docker
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  - chmod a+r /etc/apt/keyrings/docker.asc
+
+  # Ajout du dépôt apt Docker
+  - |
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+      | tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+  # Installation Docker Engine + Compose plugin
+  - apt-get update
+  - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+  # L'utilisateur ubuntu peut utiliser docker sans sudo
+  - usermod -aG docker ubuntu
+
+  # Service docker actif au boot
+  - systemctl enable --now docker
+
+  # Marqueur d'achèvement (pour debug / wait_for_cloud_init côté Terraform si besoin)
+  - touch /var/lib/cloud/instance/docker-bootstrap-complete
+
+write_files:
+  - path: /etc/motd
+    permissions: '0644'
+    content: |
+      ================================================================
+      Hôte Docker — TP IaC + Conteneurisation avancée (EPSI M1 DEV)
+      ================================================================
+      docker version : `docker version`
+      compose        : `docker compose version`
+      logs cloud-init: /var/log/cloud-init-output.log
+      ================================================================
