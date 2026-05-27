@@ -29,6 +29,9 @@
 |---|---|---|
 | Cloud provider | **AWS** (compte personnel Free Tier) | Provider Terraform mature, accessibilité, budget OK si stop/start |
 | Région | `eu-west-3` (Paris) | Latence + conformité |
+| Outil IaC | **Terraform 1.9+** (pas OpenTofu) | Plus stable, plus de doc, modules matures |
+| Distribution EC2 | **Ubuntu 24.04 LTS** (AMI Canonical) | apt familier, install Docker bien documentée, cohérence entre Docker EC2 et K8s nodes |
+| State Terraform | **Local au début, S3 + DynamoDB plus tard** | Démarrage rapide, migration optionnelle en fin de TP |
 | K8s | **kubeadm sur 3 EC2 t3.small** (1 CP + 2 workers) | Pédagogie, budget (EKS exclu — ~70€/mois pour rien) |
 | Infra Docker | **1 EC2 t3.small** | Single host suffisant |
 | Reverse proxy Docker | **Traefik** | Auto-discovery via labels, TLS auto |

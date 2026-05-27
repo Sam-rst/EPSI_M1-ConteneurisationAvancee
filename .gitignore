@@ -36,6 +36,11 @@ kubeconfig.*
 .aws/credentials
 .aws/config
 
+# --- SSH keys générées par Terraform ---
+terraform/.ssh/
+**/.ssh/*.pem
+**/.ssh/*.pub
+
 # --- Docker ---
 .dockerignore.local
 
