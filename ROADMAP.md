@@ -42,21 +42,26 @@
 
 > Objectif : application Avalone tourne en local via Docker depuis le mono-repo, image publiée sur Docker Hub `samrst/gestion-produits`.
 
-- ⬜ Cloner `gestion-produits` depuis GitLab Avalone dans un dossier temporaire
-- ⬜ Importer le contenu dans `app/` (sans le `.git` upstream)
-- ⬜ Écrire `app/UPSTREAM.md` (source + commit hash de référence)
-- ⬜ Écrire `app/Dockerfile` multi-stage (PHP-FPM + Apache OU PHP + serveur intégré)
-- ⬜ Écrire `app/compose.dev.yml` (app + MariaDB) pour tester en local
-- ⬜ Charger le jeu d'essai (DB + images)
-- ⬜ Vérifier l'app accessible sur `http://localhost`
+- ✅ Cloner `gestion-produits` depuis GitLab Avalone dans un dossier temporaire
+- ✅ Importer le contenu dans `app/` (sans le `.git` upstream)
+- ✅ Écrire `app/UPSTREAM.md` (source + commit hash de référence)
+- ✅ Refactor `connect.php` pour utiliser des variables d'environnement (DB_DRIVER/HOST/PORT/NAME/USER/PASSWORD)
+- ✅ Écrire `app/Dockerfile` (PHP 8.2 + Apache, PDO MySQL + PostgreSQL, healthcheck)
+- ✅ Écrire `app/.dockerignore`
+- ✅ Écrire `app/compose.dev.yml` (app + MariaDB) pour tester en local
+- ⬜ Test local : `docker compose -f app/compose.dev.yml up --build` et navigation sur `http://localhost:8080` (admin / password)
 - ⬜ Créer le repo Docker Hub `samrst/gestion-produits`
-- ⬜ Premier build/push manuel pour valider la chaîne
+- ⬜ Premier build/push manuel pour valider la chaîne (`docker build` + `docker push samrst/gestion-produits:prod`)
 
-**Commits prévus :**
-- `feat(app): import du code de gestion-produits depuis upstream Avalone`
-- `feat(app): ajout du Dockerfile multi-stage`
-- `feat(app): ajout du compose local de développement`
+**Commits faits :**
+- ✅ `feat(app): import du code de gestion-produits depuis upstream Avalone`
+- ✅ `refactor(app): connexion DB paramétrable par variables d'environnement`
+- ✅ `feat(app): ajout du Dockerfile PHP+Apache avec PDO MySQL et PostgreSQL`
+- 🟦 `feat(app): ajout du compose local de développement (app + mariadb)` *(en cours)*
+
+**Commits restants prévus :**
 - `docs(app): documentation de la conteneurisation`
+- `feat(ci): push initial manuel sur Docker Hub` (ou bien intégré directement en J7)
 
 ---
 

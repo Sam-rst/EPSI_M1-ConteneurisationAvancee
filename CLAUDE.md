@@ -155,6 +155,7 @@ Le correcteur ajoutera ceci à son `/etc/hosts` :
 
 - **Langue** : code en anglais (variables, fichiers), doc et commits en français.
 - **Commits** : format conventionnel ⇒ `feat:`, `fix:`, `docs:`, `chore:`, `ci:`, `refactor:`.
+- **Compose** : convention officielle moderne (Compose Spec) — fichiers nommés `compose.yml`, `compose.dev.yml`, `compose.prod.yml`, etc. Pas de préfixe `docker-`.
 - **Branches Terraform** : pas de magie, tout dans `main`. PRs si on bosse à deux, sinon push direct.
 - **Secrets** : jamais committés. Toujours dans GitHub Secrets / AWS SSM / `.tfvars` git-ignoré.
 - **Tests d'idempotence** : avant de marquer une phase terminée, faire un `terraform destroy` puis `apply` complet.
@@ -202,5 +203,18 @@ Le correcteur ajoutera ceci à son `/etc/hosts` :
 - **Toujours** invoquer la skill `superpowers:brainstorming` avant de coder une nouvelle feature non listée dans la roadmap.
 - **Toujours** invoquer `superpowers:test-driven-development` ou `superpowers:writing-plans` selon le contexte.
 - **Ne jamais** introduire un nouvel outil/service sans validation explicite (cf. décisions actées).
-- **Toujours** mettre à jour `ROADMAP.md` quand une tâche est complétée.
-- Commits petits, atomiques, message en français.
+- Commits petits, atomiques, message en français au format Conventional Commits.
+
+### Règle d'or — Documentation vivante
+
+À **chaque avancement** (chaque commit non trivial), Claude **doit** :
+
+1. **Mettre à jour la `ROADMAP.md`** :
+   - cocher (`✅`) les items terminés du jalon en cours,
+   - faire passer le tableau de pointage à l'état actuel,
+   - mettre à jour le statut du jalon (`⬜ → 🟦 → ✅`).
+2. **Mettre à jour le `README.md`** si le jalon en cours change.
+3. **Mettre à jour `CLAUDE.md`** si une nouvelle décision technique ou convention est prise.
+4. **Mettre à jour les `docs/*.md`** dès qu'un composant est livré (Terraform, compose, manifests…).
+
+L'idéal : ces mises à jour de doc sont incluses **dans le même commit** que la modification fonctionnelle correspondante, ou dans un commit `docs:` immédiatement à la suite. **Pas de PR / pas de push avec une roadmap décalée par rapport au code.**

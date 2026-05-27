@@ -1,0 +1,60 @@
+# =============================================================================
+# Stack de développement local — branche `main` (MySQL/MariaDB).
+# =============================================================================
+# Usage :
+#   cd app/
+#   docker compose -f compose.dev.yml up --build
+#   → http://localhost:8080  (admin / password)
+#
+# Volumes :
+#   - mysql-data : persistance MariaDB
+#   - uploads    : persistance des photos produit
+#
+# Le dump SQL initial est monté en lecture seule dans /docker-entrypoint-initdb.d
+# et exécuté automatiquement au premier démarrage du conteneur MariaDB.
+# =============================================================================
+
+services:
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: samrst/gestion-produits:dev-local
+    container_name: gestion-produits-app-dev
+    environment:
+      DB_DRIVER: mysql
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: gestion_produits
+      DB_USER: root
+      DB_PASSWORD: root
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    volumes:
+      - uploads:/var/www/html/uploads
+    restart: unless-stopped
+
+  db:
+    image: mariadb:11
+    container_name: gestion-produits-db-dev
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: gestion_produits
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./database/gestion_produits.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
+  uploads:
