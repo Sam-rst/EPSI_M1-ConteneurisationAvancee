@@ -1,0 +1,5 @@
+# On limite le contexte de build aux seuls fichiers nécessaires au runtime.
+*
+!php/
+!php/www/
+!php/www/**
