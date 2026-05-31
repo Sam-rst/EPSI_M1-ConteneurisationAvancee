@@ -1,0 +1,159 @@
+# =============================================================================
+# Traefik en Ingress controller, deploye sur le control plane en hostNetwork
+# pour exposer 80/443 publiquement sans LoadBalancer cloud.
+# =============================================================================
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: traefik
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: traefik
+  namespace: traefik
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: traefik
+rules:
+  - apiGroups: [""]
+    resources: ["services", "endpoints", "secrets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["extensions", "networking.k8s.io"]
+    resources: ["ingresses", "ingressclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["extensions", "networking.k8s.io"]
+    resources: ["ingresses/status"]
+    verbs: ["update"]
+  - apiGroups: ["traefik.io"]
+    resources: ["ingressroutes", "ingressroutetcps", "ingressrouteudps", "middlewares", "middlewaretcps", "tlsoptions", "tlsstores", "traefikservices", "serverstransports", "serverstransporttcps"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
+    verbs: ["list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: traefik
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: traefik
+subjects:
+  - kind: ServiceAccount
+    name: traefik
+    namespace: traefik
+
+---
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: traefik
+spec:
+  controller: traefik.io/ingress-controller
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: traefik-tls
+  namespace: traefik
+type: kubernetes.io/tls
+# TLS data est injecte par le bootstrap script (cf. deploy-app.sh).
+data:
+  tls.crt: ""
+  tls.key: ""
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: traefik
+  namespace: traefik
+spec:
+  selector:
+    matchLabels:
+      app: traefik
+  template:
+    metadata:
+      labels:
+        app: traefik
+    spec:
+      serviceAccountName: traefik
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      # Tolerations pour pouvoir tourner sur le control plane.
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+      # Selecteur : on ne tourne QUE sur le control plane (qui a l'EIP).
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      containers:
+        - name: traefik
+          image: traefik:v3.7
+          args:
+            - --providers.kubernetesingress
+            - --providers.kubernetesingress.ingressclass=traefik
+            - --entrypoints.web.address=:80
+            - --entrypoints.websecure.address=:443
+            - --entrypoints.web.http.redirections.entrypoint.to=websecure
+            - --entrypoints.web.http.redirections.entrypoint.scheme=https
+            - --entrypoints.web.http.redirections.entrypoint.permanent=true
+            - --providers.file.directory=/etc/traefik/dynamic
+            - --providers.file.watch=true
+            - --api.dashboard=false
+            - --ping=true
+            - --log.level=INFO
+            - --accesslog=true
+          ports:
+            - name: web
+              containerPort: 80
+              hostPort: 80
+            - name: websecure
+              containerPort: 443
+              hostPort: 443
+          volumeMounts:
+            - name: dynamic
+              mountPath: /etc/traefik/dynamic
+              readOnly: true
+            - name: certs
+              mountPath: /etc/traefik/certs
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 30
+      volumes:
+        - name: dynamic
+          configMap:
+            name: traefik-dynamic
+        - name: certs
+          secret:
+            secretName: traefik-tls
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: traefik-dynamic
+  namespace: traefik
+data:
+  tls.yml: |
+    tls:
+      stores:
+        default:
+          defaultCertificate:
+            certFile: /etc/traefik/certs/tls.crt
+            keyFile: /etc/traefik/certs/tls.key

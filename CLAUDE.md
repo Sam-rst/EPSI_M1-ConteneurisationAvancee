@@ -32,7 +32,7 @@
 | Outil IaC | **Terraform 1.9+** (pas OpenTofu) | Plus stable, plus de doc, modules matures |
 | Distribution EC2 | **Ubuntu 24.04 LTS** (AMI Canonical) | apt familier, install Docker bien documentée, cohérence entre Docker EC2 et K8s nodes |
 | State Terraform | **Local au début, S3 + DynamoDB plus tard** | Démarrage rapide, migration optionnelle en fin de TP |
-| K8s | **kubeadm sur 3 EC2 t3.small** (1 CP + 2 workers) | Pédagogie, budget (EKS exclu — ~70€/mois pour rien) |
+| K8s | **k3s sur 3 EC2 t3.small** (1 CP + 2 workers) | Initialement kubeadm, basculé sur k3s à 24h de la deadline pour fiabilité — k3s est K8s certifié CNCF, install en 30s, Traefik+CNI inclus |
 | Infra Docker | **1 EC2 t3.small** | Single host suffisant |
 | Reverse proxy Docker | **Traefik** | Auto-discovery via labels, TLS auto |
 | Ingress K8s | **Traefik** | Cohérence avec stack Docker |

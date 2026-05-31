@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Bootstrap du cluster kubeadm apres terraform apply.
+# Bootstrap du cluster K8s avec k3s sur les 3 EC2 provisionnees par Terraform.
 # =============================================================================
-# Steps :
-#   1. Attend que cloud-init soit fini sur les 3 nodes (containerd + kubeadm).
-#   2. Sur le control plane : kubeadm init + config kubectl + Calico CNI.
-#   3. Recupere le join command et le passe aux 2 workers.
-#   4. Installe le EFS CSI driver et la StorageClass efs-sc.
-#   5. Recupere le kubeconfig en local (terraform/.ssh/kubeconfig).
+# k3s est une distribution Kubernetes legere et certifiee CNCF (donc "K8s"
+# au sens du sujet). Avantages pour ce TP :
+#   - install en une commande curl
+#   - Traefik en Ingress controller deja inclus
+#   - flannel comme CNI inclus
+#   - kubectl + kubeconfig generes automatiquement
 #
-# Apres ce script, on a un cluster K8s 3 nodes pret a recevoir des manifests.
-# Le deploiement de l'application est fait par k8s/scripts/deploy-app.sh (J5).
+# Steps :
+#   1. Sur le CP : install k3s server, recupere le node-token et l'EIP-SAN.
+#   2. Sur les 2 workers : install k3s agent pointant sur le CP.
+#   3. Recupere le kubeconfig en local (terraform/.ssh/kubeconfig).
 #
 # Usage :
 #   ./k8s/scripts/bootstrap.sh
@@ -24,161 +26,77 @@ LOCAL_KUBECONFIG="${REPO_ROOT}/terraform/.ssh/kubeconfig"
 
 cd "${TF_DIR}"
 
-CP_PUBLIC="$(terraform output -raw control_plane_public_ip)"
-CP_PRIVATE="$(terraform output -raw control_plane_private_ip)"
-WORKER_PUBLIC_IPS=( $(terraform output -json worker_public_ips | jq -r '.[]') )
-WORKER_PRIVATE_IPS=( $(terraform output -json worker_private_ips | jq -r '.[]') )
-EFS_ID="$(terraform output -raw efs_file_system_id)"
+CP_PUBLIC="$(terraform output -raw control_plane_public_ip | tr -d '\r')"
+CP_PRIVATE="$(terraform output -raw control_plane_private_ip | tr -d '\r')"
+WORKER_PUBLIC_IPS=( $(terraform output -json worker_public_ips | tr -d '\r' | jq -r '.[]') )
 
 SSH_OPTS="-i ${KEY_PATH} -o StrictHostKeyChecking=accept-new -o LogLevel=ERROR"
 
 echo "[bootstrap] Control plane : ${CP_PUBLIC} (private ${CP_PRIVATE})"
 for i in "${!WORKER_PUBLIC_IPS[@]}"; do
-  echo "[bootstrap] Worker $((i+1))    : ${WORKER_PUBLIC_IPS[$i]} (private ${WORKER_PRIVATE_IPS[$i]})"
-done
-echo "[bootstrap] EFS          : ${EFS_ID}"
-
-# Helper : attend que /var/lib/cloud/instance/k8s-bootstrap-complete existe
-wait_cloud_init() {
-  local host="$1"
-  echo "[bootstrap] Attente cloud-init sur ${host}..."
-  for _ in $(seq 1 60); do
-    if ssh ${SSH_OPTS} "ubuntu@${host}" 'test -f /var/lib/cloud/instance/k8s-bootstrap-complete' 2>/dev/null; then
-      echo "[bootstrap]   OK"
-      return 0
-    fi
-    sleep 10
-  done
-  echo "[bootstrap] ERREUR : cloud-init pas fini sur ${host} apres 10 minutes."
-  return 1
-}
-
-# 1. Attend cloud-init sur les 3 nodes ----------------------------------------
-wait_cloud_init "${CP_PUBLIC}"
-for host in "${WORKER_PUBLIC_IPS[@]}"; do
-  wait_cloud_init "${host}"
+  echo "[bootstrap] Worker $((i+1))    : ${WORKER_PUBLIC_IPS[$i]}"
 done
 
-# 2. kubeadm init sur le control plane ----------------------------------------
-echo "[bootstrap] Initialisation du control plane (kubeadm init)..."
+# 1. Install k3s server sur le control plane ----------------------------------
+echo "[bootstrap] Install k3s server sur le control plane..."
 ssh ${SSH_OPTS} "ubuntu@${CP_PUBLIC}" bash <<EOF
 set -euo pipefail
-if [[ -f /etc/kubernetes/admin.conf ]]; then
-  echo "[cp] Cluster deja initialise, skip kubeadm init."
-  exit 0
+if systemctl is-active --quiet k3s; then
+  echo "[cp] k3s deja installe et actif, skip."
+else
+  # --tls-san : ajoute l'EIP au certif kube-api (pour kubectl distant)
+  # --node-external-ip : k3s utilise cette IP comme "external" pour les Services LB
+  curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --tls-san=${CP_PUBLIC} --node-external-ip=${CP_PUBLIC}" sh -
 fi
-
-sudo kubeadm init \
-  --apiserver-advertise-address=${CP_PRIVATE} \
-  --apiserver-cert-extra-sans=${CP_PUBLIC} \
-  --pod-network-cidr=192.168.0.0/16 \
-  --upload-certs
-
-# Config kubectl pour ubuntu
-mkdir -p /home/ubuntu/.kube
-sudo cp -f /etc/kubernetes/admin.conf /home/ubuntu/.kube/config
-sudo chown ubuntu:ubuntu /home/ubuntu/.kube/config
+echo "[cp] Etat k3s :"
+sudo systemctl is-active k3s
 EOF
 
-# 3. Recupere le join command -------------------------------------------------
-echo "[bootstrap] Generation d'un nouveau join command..."
-JOIN_CMD="$(ssh ${SSH_OPTS} "ubuntu@${CP_PUBLIC}" 'sudo kubeadm token create --print-join-command' | tr -d '\r')"
-echo "[bootstrap]   ${JOIN_CMD:0:80}..."
+# 2. Recupere le node-token pour les workers ----------------------------------
+echo "[bootstrap] Recuperation du node-token..."
+NODE_TOKEN="$(ssh ${SSH_OPTS} "ubuntu@${CP_PUBLIC}" 'sudo cat /var/lib/rancher/k3s/server/node-token' | tr -d '\r')"
+echo "[bootstrap]   token recupere (${#NODE_TOKEN} chars)"
 
-# 4. Joint les workers --------------------------------------------------------
+# 3. Install k3s agent sur les workers ----------------------------------------
 for i in "${!WORKER_PUBLIC_IPS[@]}"; do
   worker="${WORKER_PUBLIC_IPS[$i]}"
-  echo "[bootstrap] Join worker $((i+1)) (${worker})..."
+  echo "[bootstrap] Install k3s agent sur worker $((i+1)) (${worker})..."
   ssh ${SSH_OPTS} "ubuntu@${worker}" "
-    if [[ -f /etc/kubernetes/kubelet.conf ]]; then
-      echo '[w] Deja joint, skip.'
-      exit 0
+    set -euo pipefail
+    if systemctl is-active --quiet k3s-agent; then
+      echo '[w] k3s-agent deja installe, skip.'
+    else
+      curl -sfL https://get.k3s.io | K3S_URL=https://${CP_PRIVATE}:6443 K3S_TOKEN='${NODE_TOKEN}' sh -
     fi
-    sudo ${JOIN_CMD}
+    sudo systemctl is-active k3s-agent
   "
 done
 
-# 5. Installe Calico CNI ------------------------------------------------------
-echo "[bootstrap] Installation Calico CNI..."
-ssh ${SSH_OPTS} "ubuntu@${CP_PUBLIC}" bash <<'EOF'
-set -euo pipefail
-if kubectl get ns calico-system >/dev/null 2>&1; then
-  echo "[cp] Calico deja installe, skip."
-else
-  kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.2/manifests/tigera-operator.yaml
-  cat <<MANIFEST | kubectl apply -f -
-apiVersion: operator.tigera.io/v1
-kind: Installation
-metadata:
-  name: default
-spec:
-  calicoNetwork:
-    ipPools:
-      - blockSize: 26
-        cidr: 192.168.0.0/16
-        encapsulation: VXLAN
-        natOutgoing: Enabled
-        nodeSelector: all()
-MANIFEST
-fi
-
-echo "[cp] Attente des nodes Ready (max 5 min)..."
-for _ in $(seq 1 60); do
-  ready=$(kubectl get nodes --no-headers 2>/dev/null | awk '{print $2}' | grep -c "^Ready" || true)
-  total=$(kubectl get nodes --no-headers 2>/dev/null | wc -l)
-  echo "  Ready ${ready}/${total}"
-  if [[ "$ready" -ge 3 ]]; then
-    echo "[cp] Cluster operationnel."
+# 4. Verifie que les 3 nodes sont Ready ---------------------------------------
+echo "[bootstrap] Attente des 3 nodes Ready..."
+for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18; do
+  count="$(ssh ${SSH_OPTS} "ubuntu@${CP_PUBLIC}" 'sudo k3s kubectl get nodes --no-headers 2>/dev/null | awk "{print \$2}" | grep -c Ready || true' | tr -d '\r')"
+  echo "[bootstrap]   tentative ${i}/18 : ${count} nodes Ready"
+  if [[ "${count}" -ge 3 ]]; then
+    echo "[bootstrap] Cluster operationnel !"
     break
   fi
   sleep 10
 done
-kubectl get nodes -o wide
-EOF
 
-# 6. Installe le EFS CSI driver + StorageClass --------------------------------
-echo "[bootstrap] Installation EFS CSI driver..."
-ssh ${SSH_OPTS} "ubuntu@${CP_PUBLIC}" bash <<EOF
-set -euo pipefail
-if kubectl get ns kube-system | grep -q kube-system; then
-  : # ok
-fi
+ssh ${SSH_OPTS} "ubuntu@${CP_PUBLIC}" 'sudo k3s kubectl get nodes -o wide'
 
-if kubectl get crd | grep -q csidrivers.storage.k8s.io && \
-   kubectl -n kube-system get ds efs-csi-node >/dev/null 2>&1; then
-  echo "[cp] EFS CSI driver deja installe, skip."
-else
-  kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-2.1"
-fi
-
-# StorageClass dynamique pointant sur notre EFS
-cat <<MANIFEST | kubectl apply -f -
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: efs-sc
-provisioner: efs.csi.aws.com
-parameters:
-  provisioningMode: efs-ap
-  fileSystemId: ${EFS_ID}
-  directoryPerms: "700"
-MANIFEST
-
-echo "[cp] StorageClass efs-sc :"
-kubectl get sc efs-sc
-EOF
-
-# 7. Recupere le kubeconfig en local ------------------------------------------
+# 5. Recupere le kubeconfig en local ------------------------------------------
 echo "[bootstrap] Recuperation du kubeconfig local..."
-ssh ${SSH_OPTS} "ubuntu@${CP_PUBLIC}" 'sudo cat /etc/kubernetes/admin.conf' \
-  | sed "s|${CP_PRIVATE}|${CP_PUBLIC}|g" \
+ssh ${SSH_OPTS} "ubuntu@${CP_PUBLIC}" 'sudo cat /etc/rancher/k3s/k3s.yaml' \
+  | sed "s|127.0.0.1|${CP_PUBLIC}|g" \
   > "${LOCAL_KUBECONFIG}"
 chmod 600 "${LOCAL_KUBECONFIG}"
 echo "[bootstrap] Kubeconfig sauvegarde dans ${LOCAL_KUBECONFIG}"
 
 echo ""
 echo "[bootstrap] ============================================================"
-echo "[bootstrap] Cluster pret. Pour utiliser kubectl en local :"
+echo "[bootstrap] Cluster k3s pret. Pour utiliser kubectl en local :"
 echo "[bootstrap]   export KUBECONFIG=${LOCAL_KUBECONFIG}"
 echo "[bootstrap]   kubectl get nodes"
 echo "[bootstrap] ============================================================"

@@ -255,8 +255,8 @@
 | J1 — Conteneurisation | 3 | ✅ Terminé (push Docker Hub différé en J7) |
 | J2 — Infra Docker | 7 | ✅ Terminé (EC2 13.36.147.208 en ligne, Docker OK) |
 | J3 — Deploy Docker | 6 | ✅ Terminé (https://gestion-produits.local OK) |
-| J4 — Infra K8s | 13 | 🟦 En cours |
-| J5 — Deploy K8s | 7 | ⬜ |
+| J4 — Infra K8s | 13 | ✅ Terminé (cluster k3s 3 nodes Ready) |
+| J5 — Deploy K8s | 7 | 🟦 En cours |
 | J6 — Version dev | 4 | ⬜ |
 | J7 — CI/CD | bonus | ⬜ |
 | J8 — Doc finale | — | ⬜ |
