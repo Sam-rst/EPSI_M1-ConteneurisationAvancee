@@ -29,8 +29,9 @@ Le tout est provisionné par **Terraform**, déployé par **GitHub Actions**, et
 
 ## Statut
 
-🟦 **Jalon en cours : J2 — Infrastructure Docker (Terraform)**
+🟦 **Jalon en cours : J3 — Déploiement de l'app sur Docker (stack prod)**
 
-J1 (conteneurisation) ✅ validé en local — l'application répond et le jeu d'essai est chargé.
+- ✅ J1 — image Docker validée en local
+- ✅ J2 — infra Docker en ligne sur AWS, EIP **`13.36.147.208`**, Docker 29.5 + Compose v5.1 installés via cloud-init
 
 Voir [`ROADMAP.md`](./ROADMAP.md) pour le détail.

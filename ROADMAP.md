@@ -79,18 +79,19 @@
 - ✅ `terraform/envs/docker/` : compose des modules + génération auto de la clé SSH
 - ✅ Variables : `terraform.tfvars.example` documenté
 - ✅ `terraform fmt` + `terraform validate` : OK
-- ⬜ Première exécution : `terraform init` + `plan` + `apply` (nécessite credentials AWS configurées)
-- ⬜ SSH manuel pour vérifier `docker version` OK
-- ⬜ Test idempotence : second `terraform apply` (no-op) puis `destroy` + `apply` from scratch
+- ✅ Première exécution : `terraform init` + `plan` + `apply` réussis
+- ✅ SSH manuel : Docker 29.5.2 + Compose v5.1.4 installés par cloud-init, ubuntu dans le groupe docker
+- ✅ Hotfixes appliqués en cours d'apply : descriptions SG conformes au charset ASCII restrictif d'AWS
+- ⬜ Test idempotence formel : `destroy` puis `apply` from scratch (à faire si temps en fin de TP)
 
 **Commits faits :**
 - ✅ `feat(terraform): module network (VPC, subnet public, IGW)`
 - ✅ `feat(terraform): module docker-host (EC2 Ubuntu + Docker via cloud-init)`
 - ✅ `feat(terraform): env docker (orchestration des modules + génération SSH)`
 - ✅ `docs(terraform): README et procédure AWS`
+- 🟦 `fix(terraform): descriptions SG en ASCII pur (contrainte AWS)`
 
-**Commits restants prévus :**
-- `chore(terraform): premier apply de l'env docker (post AWS setup)`
+**EIP en service : `13.36.147.208` — instance `i-03a7255abf3211158`**
 
 ---
 
@@ -248,8 +249,8 @@
 |---|---|---|
 | J0 — Init | — | ✅ Terminé |
 | J1 — Conteneurisation | 3 | ✅ Terminé (push Docker Hub différé en J7) |
-| J2 — Infra Docker | 7 | 🟦 En cours (code prêt, apply à faire) |
-| J3 — Deploy Docker | 6 | ⬜ |
+| J2 — Infra Docker | 7 | ✅ Terminé (EC2 13.36.147.208 en ligne, Docker OK) |
+| J3 — Deploy Docker | 6 | 🟦 En cours |
 | J4 — Infra K8s | 13 | ⬜ |
 | J5 — Deploy K8s | 7 | ⬜ |
 | J6 — Version dev | 4 | ⬜ |

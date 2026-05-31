@@ -41,7 +41,7 @@ resource "aws_key_pair" "this" {
 # Security Group : 80/443 public + 22 restreint --------------------------------
 resource "aws_security_group" "this" {
   name        = "${var.name}-sg"
-  description = "Sécurité pour l'hôte Docker — 80/443 ouverts au public, SSH restreint."
+  description = "Security for Docker host - 80/443 public, SSH restricted"
   vpc_id      = var.vpc_id
 
   tags = merge(var.tags, {
@@ -51,7 +51,7 @@ resource "aws_security_group" "this" {
 
 resource "aws_vpc_security_group_ingress_rule" "http" {
   security_group_id = aws_security_group.this.id
-  description       = "HTTP public"
+  description       = "HTTP from anywhere"
   ip_protocol       = "tcp"
   from_port         = 80
   to_port           = 80
@@ -60,7 +60,7 @@ resource "aws_vpc_security_group_ingress_rule" "http" {
 
 resource "aws_vpc_security_group_ingress_rule" "https" {
   security_group_id = aws_security_group.this.id
-  description       = "HTTPS public"
+  description       = "HTTPS from anywhere"
   ip_protocol       = "tcp"
   from_port         = 443
   to_port           = 443
@@ -69,7 +69,7 @@ resource "aws_vpc_security_group_ingress_rule" "https" {
 
 resource "aws_vpc_security_group_ingress_rule" "ssh" {
   security_group_id = aws_security_group.this.id
-  description       = "SSH depuis l'IP admin"
+  description       = "SSH from admin IP"
   ip_protocol       = "tcp"
   from_port         = 22
   to_port           = 22
@@ -78,7 +78,7 @@ resource "aws_vpc_security_group_ingress_rule" "ssh" {
 
 resource "aws_vpc_security_group_egress_rule" "all" {
   security_group_id = aws_security_group.this.id
-  description       = "Egress libre"
+  description       = "All egress allowed"
   ip_protocol       = "-1"
   cidr_ipv4         = "0.0.0.0/0"
 }
