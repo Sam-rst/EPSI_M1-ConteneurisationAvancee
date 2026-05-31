@@ -1,0 +1,90 @@
+#cloud-config
+# =============================================================================
+# Cloud-init pour les nodes du cluster Kubernetes (kubeadm).
+# =============================================================================
+# Installe :
+#   - containerd (runtime de conteneurs utilise par kubeadm)
+#   - kubeadm, kubelet, kubectl
+#   - Configure les prerequis kernel (modules, sysctl)
+#
+# Le bootstrap kubeadm lui-meme (init sur CP, join sur workers) est fait
+# par le script k8s/scripts/bootstrap.sh apres `terraform apply`.
+# =============================================================================
+
+package_update: true
+package_upgrade: false
+
+packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - gnupg
+  - lsb-release
+  - jq
+
+write_files:
+  - path: /etc/modules-load.d/k8s.conf
+    permissions: '0644'
+    content: |
+      overlay
+      br_netfilter
+
+  - path: /etc/sysctl.d/99-kubernetes-cri.conf
+    permissions: '0644'
+    content: |
+      net.bridge.bridge-nf-call-iptables  = 1
+      net.bridge.bridge-nf-call-ip6tables = 1
+      net.ipv4.ip_forward                 = 1
+
+  - path: /etc/motd
+    permissions: '0644'
+    content: |
+      ================================================================
+      Node Kubernetes - TP IaC + Conteneurisation avancee (EPSI M1)
+      ================================================================
+      Role : ${role}
+      ================================================================
+
+runcmd:
+  # Active les modules kernel
+  - modprobe overlay
+  - modprobe br_netfilter
+  - sysctl --system
+
+  # Desactive swap (obligatoire pour kubelet)
+  - swapoff -a
+  - sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+
+  # Installe containerd depuis le depot Docker (plus a jour que apt vanilla)
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  - chmod a+r /etc/apt/keyrings/docker.asc
+  - |
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" \
+      | tee /etc/apt/sources.list.d/docker.list > /dev/null
+  - apt-get update
+  - apt-get install -y containerd.io
+
+  # Configuration containerd avec SystemdCgroup (requis par kubelet)
+  - mkdir -p /etc/containerd
+  - containerd config default | tee /etc/containerd/config.toml > /dev/null
+  - sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
+  - systemctl restart containerd
+  - systemctl enable containerd
+
+  # Installe kubeadm/kubelet/kubectl en v1.31 (LTS au moment du TP)
+  - curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  - chmod a+r /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  - |
+    echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /" \
+      > /etc/apt/sources.list.d/kubernetes.list
+  - apt-get update
+  - apt-get install -y kubelet kubeadm kubectl
+  - apt-mark hold kubelet kubeadm kubectl
+  - systemctl enable kubelet
+
+  # NFS client pour pouvoir monter EFS (utilise par les pods K8s via CSI)
+  - apt-get install -y nfs-common
+
+  # Marqueur pour que les scripts de bootstrap sachent que cloud-init a fini
+  - touch /var/lib/cloud/instance/k8s-bootstrap-complete
