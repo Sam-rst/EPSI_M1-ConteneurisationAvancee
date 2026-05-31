@@ -95,23 +95,27 @@
 
 ---
 
-## J3 — Déploiement de l'app sur Docker *(6 pts)*
+## J3 — Déploiement de l'app sur Docker *(6 pts)* ✅
 
 > Objectif : Traefik route `https://gestion-produits.local` vers l'app prod.
 
-- ⬜ Écrire `docker/docker-compose.yml` prod (Traefik + app-prod + db-mysql)
-- ⬜ Config Traefik (statique + dynamique) avec labels + TLS auto-signé
-- ⬜ Script de génération du certif auto-signé au boot
-- ⬜ Init schema MySQL au premier boot (volume + script SQL)
-- ⬜ Déploiement via SSH + `docker compose up -d`
-- ⬜ Ajout entrée `/etc/hosts` local : `<EIP> gestion-produits.local`
-- ⬜ Test bout en bout : navigation, ajout produit, persistance après restart
-- ⬜ Cible Makefile `make deploy-docker`
+- ✅ Écrire `docker/compose.yml` prod (Traefik + app-prod + db-mysql)
+- ✅ Config Traefik dynamique TLS + redirection HTTP→HTTPS
+- ✅ Script `scripts/gen-certs.sh` : génère certif auto-signé avec SAN
+- ✅ Init schema MySQL au premier boot (dump Avalone monté en lecture seule)
+- ✅ Script `scripts/deploy.sh` : tar+ssh des sources + bootstrap + `compose up`
+- ✅ Stack en ligne sur `13.36.147.208`, networks `web` + `db-prod` (isolé)
+- ✅ **Test bout en bout validé** : HTTPS 200, redirection HTTP→HTTPS, auth admin/password OK, 5 produits affichés
+- ⬜ Cible Makefile `make deploy-docker` (sera fait avec le reste du Makefile en J8)
 
-**Commits prévus :**
-- `feat(docker): docker-compose prod avec Traefik + MySQL`
-- `feat(docker): configuration Traefik et TLS auto-signé`
-- `feat(make): cibles deploy-docker et démo`
+**Commits faits :**
+- ✅ `feat(docker): stack prod avec Traefik + app + MySQL et script de deploy`
+- ✅ `fix(docker): Traefik v3.7 pour compatibilite Docker Engine 29.x`
+
+**À ajouter à /etc/hosts (pour test en navigateur) :**
+```
+13.36.147.208  gestion-produits.local  dev.gestion-produits.local
+```
 
 ---
 
@@ -250,8 +254,8 @@
 | J0 — Init | — | ✅ Terminé |
 | J1 — Conteneurisation | 3 | ✅ Terminé (push Docker Hub différé en J7) |
 | J2 — Infra Docker | 7 | ✅ Terminé (EC2 13.36.147.208 en ligne, Docker OK) |
-| J3 — Deploy Docker | 6 | 🟦 En cours |
-| J4 — Infra K8s | 13 | ⬜ |
+| J3 — Deploy Docker | 6 | ✅ Terminé (https://gestion-produits.local OK) |
+| J4 — Infra K8s | 13 | 🟦 En cours |
 | J5 — Deploy K8s | 7 | ⬜ |
 | J6 — Version dev | 4 | ⬜ |
 | J7 — CI/CD | bonus | ⬜ |

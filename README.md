@@ -29,9 +29,10 @@ Le tout est provisionné par **Terraform**, déployé par **GitHub Actions**, et
 
 ## Statut
 
-🟦 **Jalon en cours : J3 — Déploiement de l'app sur Docker (stack prod)**
+🟦 **Jalon en cours : J4 — Infrastructure Kubernetes (Terraform)**
 
 - ✅ J1 — image Docker validée en local
-- ✅ J2 — infra Docker en ligne sur AWS, EIP **`13.36.147.208`**, Docker 29.5 + Compose v5.1 installés via cloud-init
+- ✅ J2 — infra Docker en ligne sur AWS, EIP **`13.36.147.208`**
+- ✅ J3 — stack prod déployée : `https://gestion-produits.local` OK (auth + produits)
 
 Voir [`ROADMAP.md`](./ROADMAP.md) pour le détail.
