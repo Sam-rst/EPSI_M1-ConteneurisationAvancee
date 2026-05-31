@@ -1,0 +1,123 @@
+# =============================================================================
+# Stack Docker de production — déployée sur l'EC2 AWS (cf. terraform/envs/docker).
+# =============================================================================
+#
+# Composition :
+#   - traefik       : reverse proxy + TLS auto-signé, écoute sur 80/443
+#   - app-prod      : application en version `main` (PHP + PDO MySQL)
+#   - db-mysql      : MySQL 8.4, persiste les données du site prod
+#   - (à venir J6)    app-dev + db-postgres pour la version dev
+#
+# Le mot de passe MySQL est passé via le fichier `.env` (gitignored).
+# Les certificats TLS auto-signés sont générés par scripts/gen-certs.sh
+# avant le premier `docker compose up`.
+#
+# URLs exposées par Traefik (le correcteur ajoute la ligne à son /etc/hosts) :
+#   - https://gestion-produits.local       -> app-prod
+#   - https://dev.gestion-produits.local   -> app-dev (J6)
+# =============================================================================
+
+services:
+
+  traefik:
+    image: traefik:v3.2
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=web"
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      # Redirection automatique HTTP -> HTTPS
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+      - "--api.dashboard=false"
+      - "--ping=true"
+      - "--log.level=INFO"
+      - "--accesslog=true"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+      - ./traefik/certs:/etc/traefik/certs:ro
+    networks:
+      - web
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  app-prod:
+    # En attendant la CI/CD (J7), l'image est buildee localement sur l'hote.
+    # Une fois la CI/CD prete, on peut commenter la section build et laisser
+    # docker compose pull depuis Docker Hub.
+    build:
+      context: ../app
+      dockerfile: Dockerfile
+    image: samrst/gestion-produits:prod
+    container_name: app-prod
+    restart: unless-stopped
+    environment:
+      DB_DRIVER: mysql
+      DB_HOST: db-mysql
+      DB_PORT: "3306"
+      DB_NAME: gestion_produits
+      DB_USER: app
+      DB_PASSWORD: ${MYSQL_APP_PASSWORD}
+    depends_on:
+      db-mysql:
+        condition: service_healthy
+    volumes:
+      - prod-uploads:/var/www/html/uploads
+    networks:
+      - web
+      - db-prod
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.app-prod.rule=Host(`gestion-produits.local`)"
+      - "traefik.http.routers.app-prod.entrypoints=websecure"
+      - "traefik.http.routers.app-prod.tls=true"
+      - "traefik.http.services.app-prod.loadbalancer.server.port=80"
+
+  db-mysql:
+    image: mysql:8.4
+    container_name: db-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: gestion_produits
+      MYSQL_USER: app
+      MYSQL_PASSWORD: ${MYSQL_APP_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./init/mysql/gestion_produits.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    networks:
+      - db-prod
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+networks:
+  # Réseau de front, partagé entre Traefik et les apps exposées
+  web:
+    name: web
+  # Réseau isolé prod : seules app-prod et db-mysql y sont
+  db-prod:
+    name: db-prod
+    internal: true
+
+volumes:
+  mysql-data:
+  prod-uploads:

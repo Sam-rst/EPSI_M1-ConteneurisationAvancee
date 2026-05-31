@@ -1,0 +1,13 @@
+# Configuration TLS dynamique pour Traefik
+# Le certificat est généré par scripts/gen-certs.sh avant le premier `up`.
+tls:
+  certificates:
+    - certFile: /etc/traefik/certs/gestion-produits.local.crt
+      keyFile: /etc/traefik/certs/gestion-produits.local.key
+      stores:
+        - default
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /etc/traefik/certs/gestion-produits.local.crt
+        keyFile: /etc/traefik/certs/gestion-produits.local.key
