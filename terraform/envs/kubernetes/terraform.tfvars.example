@@ -1,0 +1,14 @@
+# Variables pour l'env Kubernetes.
+# Copier en `terraform.tfvars` (gitignored) et adapter.
+
+aws_region        = "eu-west-3"
+availability_zone = "eu-west-3a"
+aws_profile       = "tp-cont"
+instance_type     = "t3.small"
+worker_count      = 2
+
+# IP autorisée pour SSH et kube-api. Récupérer via : curl https://api.ipify.org
+admin_ip_cidr = "203.0.113.42/32"
+
+# Préfixe (optionnel)
+# name_prefix = "tp-cont-k8s"

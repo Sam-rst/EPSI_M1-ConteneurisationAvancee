@@ -257,7 +257,7 @@
 | J3 — Deploy Docker | 6 | ✅ Terminé (https://gestion-produits.local OK) |
 | J4 — Infra K8s | 13 | ✅ Terminé (cluster k3s 3 nodes Ready) |
 | J5 — Deploy K8s | 7 | ✅ Terminé (https://k8s.gestion-produits.local OK) |
-| J6 — Version dev | 4 | 🟦 En cours |
+| J6 — Version dev | 4 | ✅ Terminé (4 URLs OK : Docker prod/dev + K8s prod/dev) |
 | J7 — CI/CD | bonus | ⬜ |
 | J8 — Doc finale | — | ⬜ |
 | J9 — Rendu | — | ⬜ |
