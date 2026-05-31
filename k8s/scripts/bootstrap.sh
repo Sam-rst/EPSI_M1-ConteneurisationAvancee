@@ -44,9 +44,16 @@ set -euo pipefail
 if systemctl is-active --quiet k3s; then
   echo "[cp] k3s deja installe et actif, skip."
 else
-  # --tls-san : ajoute l'EIP au certif kube-api (pour kubectl distant)
-  # --node-external-ip : k3s utilise cette IP comme "external" pour les Services LB
-  curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --tls-san=${CP_PUBLIC} --node-external-ip=${CP_PUBLIC}" sh -
+  # --tls-san           : ajoute l'EIP au certif kube-api (pour kubectl distant)
+  # --node-external-ip  : exposee aux Services type LoadBalancer (klipper-lb)
+  # --node-ip           : IP privee, evite que les pods passent par l'EIP pour
+  #                       atteindre l'API server (hairpin NAT casse sur AWS)
+  # --advertise-address : meme raison, force l'API a se publier en IP privee
+  curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server \
+    --tls-san=${CP_PUBLIC} \
+    --node-external-ip=${CP_PUBLIC} \
+    --node-ip=${CP_PRIVATE} \
+    --advertise-address=${CP_PRIVATE}" sh -
 fi
 echo "[cp] Etat k3s :"
 sudo systemctl is-active k3s

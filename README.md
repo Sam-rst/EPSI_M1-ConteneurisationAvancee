@@ -29,10 +29,12 @@ Le tout est provisionné par **Terraform**, déployé par **GitHub Actions**, et
 
 ## Statut
 
-🟦 **Jalon en cours : J4 — Infrastructure Kubernetes (Terraform)**
+🟦 **Jalon en cours : J6 — Version dev PostgreSQL**
 
 - ✅ J1 — image Docker validée en local
 - ✅ J2 — infra Docker en ligne sur AWS, EIP **`13.36.147.208`**
-- ✅ J3 — stack prod déployée : `https://gestion-produits.local` OK (auth + produits)
+- ✅ J3 — stack prod Docker : `https://gestion-produits.local` OK (auth + produits)
+- ✅ J4 — cluster K8s **k3s** 3 nodes Ready, EIP CP **`13.36.198.45`**
+- ✅ J5 — app prod K8s : `https://k8s.gestion-produits.local` OK (auth + produits)
 
 Voir [`ROADMAP.md`](./ROADMAP.md) pour le détail.

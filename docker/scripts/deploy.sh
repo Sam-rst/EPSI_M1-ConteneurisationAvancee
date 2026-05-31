@@ -39,26 +39,28 @@ echo "[deploy] Cle   : ${KEY_PATH}"
 SSH_OPTS="-i ${KEY_PATH} -o StrictHostKeyChecking=accept-new -o LogLevel=ERROR"
 
 # 1. Synchronise les sources sur l'EC2 ----------------------------------------
-echo "[deploy] Synchronisation des sources..."
-ssh ${SSH_OPTS} "${REMOTE_USER}@${EIP}" "mkdir -p ${REMOTE_DIR}/{app,docker,init/mysql}"
+# Utilise tar + ssh (rsync pas dispo nativement sur Windows Git Bash).
+# On preserve cote distant : docker/.env, docker/traefik/certs/, docker/init/mysql/
+echo "[deploy] Synchronisation des sources (tar via ssh)..."
+ssh ${SSH_OPTS} "${REMOTE_USER}@${EIP}" "
+  mkdir -p ${REMOTE_DIR}/docker/init/mysql ${REMOTE_DIR}/docker/traefik/certs
+  rm -rf ${REMOTE_DIR}/app
+"
 
-rsync -az --delete \
-  -e "ssh ${SSH_OPTS}" \
-  --exclude '.git' \
-  --exclude 'node_modules' \
-  "${REPO_ROOT}/app/" "${REMOTE_USER}@${EIP}:${REMOTE_DIR}/app/"
+# Envoi du dossier app/ (recreer a chaque fois)
+tar -cf - -C "${REPO_ROOT}" app | \
+  ssh ${SSH_OPTS} "${REMOTE_USER}@${EIP}" "tar -xf - -C ${REMOTE_DIR}"
 
-rsync -az --delete \
-  -e "ssh ${SSH_OPTS}" \
-  --exclude '.env' \
-  --exclude 'traefik/certs' \
-  --exclude 'init/mysql' \
-  "${REPO_ROOT}/docker/" "${REMOTE_USER}@${EIP}:${REMOTE_DIR}/docker/"
+# Envoi du dossier docker/ en EXCLUANT les fichiers gardes cote distant
+tar -cf - -C "${REPO_ROOT}" \
+  --exclude='docker/.env' \
+  --exclude='docker/traefik/certs' \
+  --exclude='docker/init/mysql' \
+  docker | \
+  ssh ${SSH_OPTS} "${REMOTE_USER}@${EIP}" "tar -xf - -C ${REMOTE_DIR}"
 
-# Le dump SQL fourni par Avalone est partage entre l'app et la stack prod ;
-# on le copie au bon endroit pour l'init MySQL.
-rsync -az \
-  -e "ssh ${SSH_OPTS}" \
+# Copie du dump SQL au bon emplacement pour l'init MySQL
+scp -i "${KEY_PATH}" -o StrictHostKeyChecking=accept-new -o LogLevel=ERROR \
   "${REPO_ROOT}/app/database/gestion_produits.sql" \
   "${REMOTE_USER}@${EIP}:${REMOTE_DIR}/docker/init/mysql/gestion_produits.sql"
 
