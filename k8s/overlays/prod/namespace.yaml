@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gestion-produits-prod
+  labels:
+    app.kubernetes.io/part-of: gestion-produits
+    environment: prod

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+  labels:
+    app.kubernetes.io/name: gestion-produits
+    app.kubernetes.io/component: db
+spec:
+  type: ClusterIP
+  clusterIP: None  # headless service (necessaire pour StatefulSet)
+  selector:
+    app.kubernetes.io/name: gestion-produits
+    app.kubernetes.io/component: db
+  ports:
+    - name: mysql
+      port: 3306
+      targetPort: 3306

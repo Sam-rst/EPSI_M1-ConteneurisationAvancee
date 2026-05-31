@@ -20,7 +20,9 @@ spec:
       containers:
         - name: app
           image: samrst/gestion-produits:prod
-          imagePullPolicy: Always
+          # IfNotPresent : l'image est importee localement via ctr (cf. deploy.sh)
+          # en attendant la CI/CD qui pushera sur Docker Hub.
+          imagePullPolicy: IfNotPresent
           ports:
             - name: http
               containerPort: 80
