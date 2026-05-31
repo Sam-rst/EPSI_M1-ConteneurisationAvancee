@@ -1,0 +1,16 @@
+# Patch du Deployment app pour pointer sur l'image dev + PostgreSQL.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: samrst/gestion-produits:dev
+          env:
+            - name: DB_DRIVER
+              value: pgsql
+            - name: DB_PORT
+              value: "5432"

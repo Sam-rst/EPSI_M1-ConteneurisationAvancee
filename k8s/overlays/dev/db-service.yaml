@@ -1,0 +1,12 @@
+# Service DB : port 5432 (PG) au lieu de 3306 (MySQL)
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+spec:
+  ports:
+    - name: pg
+      port: 5432
+      targetPort: 5432
+    - name: mysql
+      $patch: delete

@@ -112,6 +112,60 @@ services:
       retries: 10
       start_period: 30s
 
+  # ===========================================================================
+  # Version "dev" - meme stack que prod mais sur la branche `dev` du code
+  # avec PostgreSQL a la place de MySQL.
+  # ===========================================================================
+
+  app-dev:
+    # L'image dev est buildee depuis la branche `dev` (cf. README J6).
+    # Pas de section build ici parce que le code present sur le disque est main.
+    image: samrst/gestion-produits:dev
+    container_name: app-dev
+    restart: unless-stopped
+    environment:
+      DB_DRIVER: pgsql
+      DB_HOST: db-postgres
+      DB_PORT: "5432"
+      DB_NAME: gestion_produits
+      DB_USER: app
+      DB_PASSWORD: ${POSTGRES_APP_PASSWORD}
+    depends_on:
+      db-postgres:
+        condition: service_healthy
+    volumes:
+      - dev-uploads:/var/www/html/uploads
+    networks:
+      - web
+      - db-dev
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.app-dev.rule=Host(`dev.gestion-produits.local`)"
+      - "traefik.http.routers.app-dev.entrypoints=websecure"
+      - "traefik.http.routers.app-dev.tls=true"
+      - "traefik.http.services.app-dev.loadbalancer.server.port=80"
+
+  db-postgres:
+    image: postgres:16
+    container_name: db-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: gestion_produits
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${POSTGRES_APP_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init/postgres/gestion_produits.postgres.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    networks:
+      - db-dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d gestion_produits"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
 networks:
   # Réseau de front, partagé entre Traefik et les apps exposées
   web:
@@ -120,7 +174,13 @@ networks:
   db-prod:
     name: db-prod
     internal: true
+  # Réseau isolé dev : seules app-dev et db-postgres y sont
+  db-dev:
+    name: db-dev
+    internal: true
 
 volumes:
   mysql-data:
   prod-uploads:
+  postgres-data:
+  dev-uploads:
