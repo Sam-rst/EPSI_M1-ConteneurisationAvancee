@@ -20,7 +20,10 @@
 services:
 
   traefik:
-    image: traefik:v3.2
+    # v3.7 minimum pour parler avec Docker Engine 29.x (API 1.54).
+    # Les versions anterieures utilisent une API trop ancienne (1.24)
+    # qui n'est plus supportee par Docker 29.
+    image: traefik:v3.7
     container_name: traefik
     restart: unless-stopped
     command:
