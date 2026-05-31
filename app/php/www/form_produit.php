@@ -6,11 +6,11 @@
 
     if (isset($_GET['id'])) {
         $action = "modification";
-        $PRO_id = $_GET['id'];
+        $pro_id = $_GET['id'];
 
-        $sql = "SELECT * FROM produits WHERE PRO_id = ?";
+        $sql = "SELECT * FROM produits WHERE pro_id = ?";
         $res = $db->prepare($sql);
-        $res->bindParam(1, $PRO_id);
+        $res->bindParam(1, $pro_id);
         $res->execute();
         if ($res === false) {
             header('Location: home.php');
@@ -20,10 +20,10 @@
     } else {
         $action = "ajout";
         $produit = array(
-            'PRO_id' => '',
-            'PRO_lib' => '',
-            'PRO_description' => '',
-            'PRO_prix' => 0
+            'pro_id' => '',
+            'pro_lib' => '',
+            'pro_description' => '',
+            'pro_prix' => 0
         );
     }
 
@@ -48,25 +48,25 @@
             <?php
                 if ($action == 'modification') {
             ?>
-            <input type="hidden" id="PRO_id" name="PRO_id" value="<?php echo $PRO_id ?>" >
+            <input type="hidden" id="pro_id" name="pro_id" value="<?php echo $pro_id ?>" >
             <?php
                 }
             ?>
 
 
             <div class="form-group">
-                <label for="PRO_lib">Libellé</label>
-                <input type="text" class="form-control" id="PRO_lib" name="PRO_lib" value="<?php echo $produit['PRO_lib'] ?>" required>
+                <label for="pro_lib">Libellé</label>
+                <input type="text" class="form-control" id="pro_lib" name="pro_lib" value="<?php echo $produit['pro_lib'] ?>" required>
             </div>
 
             <div class="form-group">
-                <label for="PRO_description">Description</label>
-                <textarea class="form-control" id="PRO_description" name="PRO_description" rows="10"><?php echo $produit['PRO_description'] ?></textarea>
+                <label for="pro_description">Description</label>
+                <textarea class="form-control" id="pro_description" name="pro_description" rows="10"><?php echo $produit['pro_description'] ?></textarea>
             </div>
 
             <div class="form-group">
-                <label for="PRO_prix">Prix (€)</label>
-                <input type="number" class="form-control text-right" id="PRO_prix" name="PRO_prix" value="<?php echo $produit['PRO_prix'] ?>" step="0.01" min="0" required>
+                <label for="pro_prix">Prix (€)</label>
+                <input type="number" class="form-control text-right" id="pro_prix" name="pro_prix" value="<?php echo $produit['pro_prix'] ?>" step="0.01" min="0" required>
             </div>
 
             <div class="form-group">
@@ -74,17 +74,17 @@
 
                 <?php
                     if ($action == 'modification') {
-                        $sql = "SELECT * FROM ressources WHERE PRO_id = ?";
+                        $sql = "SELECT * FROM ressources WHERE pro_id = ?";
                         $res = $db->prepare($sql);
-                        $res->bindParam(1, $PRO_id);
+                        $res->bindParam(1, $pro_id);
                         $res->execute();
                         if ($res != false) {
                             echo "<div>";
                             while ($ressource = $res->fetch(PDO::FETCH_ASSOC)) {
-                                if ($ressource['RE_type'] == 'img') {
+                                if ($ressource['re_type'] == 'img') {
                                     echo '<div class="img">';
-                                    echo '<img src="'.$ressource['RE_url'].'" class="img-thumbnail thumb" data-id="'.$ressource['RE_id'].'">';
-                                    echo '<img src="img/trash.svg" class="icon trash" data-id="'.$ressource['RE_id'].'">';
+                                    echo '<img src="'.$ressource['re_url'].'" class="img-thumbnail thumb" data-id="'.$ressource['re_id'].'">';
+                                    echo '<img src="img/trash.svg" class="icon trash" data-id="'.$ressource['re_id'].'">';
                                     echo '</div>';
                                 }
                             }
@@ -115,12 +115,12 @@
     <script>
         $('img.icon.trash').click(function() {
             if(confirm("Etes-vous sûr de vouloir supprimer cette photo?")) {
-                var RE_id = $(this).attr('data-id');
+                var re_id = $(this).attr('data-id');
                 
                 request = $.ajax({
                     method: "POST",
                     url: "validation.php",
-                    data: { action: 'supprimer_ressource', RE_id: RE_id }
+                    data: { action: 'supprimer_ressource', re_id: re_id }
                 }).done(function( msg ) {
                     if (msg == 'OK') {
                         document.location.reload();
@@ -136,12 +136,12 @@
         $('button.delete').click(function() {
             
             if(confirm("Etes-vous sûr de vouloir supprimer ce produit?")) {
-                var PRO_id = $('#PRO_id').val();
+                var pro_id = $('#pro_id').val();
 
                 request = $.ajax({
                     method: "POST",
                     url: "validation.php",
-                    data: { action: 'supprimer_produit', PRO_id: PRO_id }
+                    data: { action: 'supprimer_produit', pro_id: pro_id }
                 }).done(function( msg ) {
                     if (msg == 'OK') {
                         goto('home.php');

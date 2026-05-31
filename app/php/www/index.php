@@ -14,12 +14,12 @@
         <h1>Gestion des produits</h1>
         <form action="auth.php" method="post">
             <div class="form-group">
-                <label for="US_login">Login</label>
-                <input type="text" id="US_login" name="US_login" class="form-control" value="">
+                <label for="us_login">Login</label>
+                <input type="text" id="us_login" name="us_login" class="form-control" value="">
             </div>
             <div class="form-group">
-                <label for="US_password">Mot de passe</label>
-                <input type="password" id="US_password" name="US_password" class="form-control" value="">
+                <label for="us_password">Mot de passe</label>
+                <input type="password" id="us_password" name="us_password" class="form-control" value="">
             </div>
             <div class="form-group">
                 <button type="submit" class="btn btn-primary">Se connecter</button>

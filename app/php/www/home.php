@@ -29,18 +29,18 @@
             </thead>
             <tbody>
                 <?php
-                    $sql = "SELECT * FROM produits ORDER BY PRO_lib ASC";
+                    $sql = "SELECT * FROM produits ORDER BY pro_lib ASC";
                     $res = $db->query($sql);
                     if ($res == false) {
                         echo "<tr><td colspan=\"3\">Aucun produit trouvé</td></tr>";
                     }
                     // Affichage des produits
                     while ($produit = $res->fetch(PDO::FETCH_ASSOC)) {
-                        $prix = number_format($produit['PRO_prix'], 2, ',', ' ');
+                        $prix = number_format($produit['pro_prix'], 2, ',', ' ');
                         
-                        echo '<tr onClick="goto(\'produit.php?id='.$produit['PRO_id'].'\')">';
-                        echo "<td class=\"text-center\">".$produit['PRO_id']."</td>";
-                        echo "<td>".$produit['PRO_lib']."</td>";
+                        echo '<tr onClick="goto(\'produit.php?id='.$produit['pro_id'].'\')">';
+                        echo "<td class=\"text-center\">".$produit['pro_id']."</td>";
+                        echo "<td>".$produit['pro_lib']."</td>";
                         echo "<td class=\"text-right\">".$prix."&nbsp;€</td>";
                         echo "</tr>";
                     }
